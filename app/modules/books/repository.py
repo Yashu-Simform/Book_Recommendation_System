@@ -5,6 +5,7 @@ from app.modules.books.exceptions import BookNotFoundError, BookAlreadyExistsErr
 from datetime import datetime
 from app.core.constants import tzinfo
 from app.modules.ratings.models import Rating
+from app.core.logging import logger
 
 
 async def create_book(session: AsyncSession, book_data: dict):
@@ -29,12 +30,16 @@ async def create_book(session: AsyncSession, book_data: dict):
     book = result.scalars().first()
 
     if book:
+        logger.debug(
+            f"Book with title '{book_data['title']}' and author '{book_data['author']}' already exists."
+        )
         raise BookAlreadyExistsError(book_data["title"], book_data["author"])
 
     new_book = Book(**book_data)
     try:
         session.add(new_book)
         await session.commit()
+        logger.debug(f"Book '{new_book.title}' created successfully.")
     except Exception as e:
         await session.rollback()
         raise e

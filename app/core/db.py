@@ -1,6 +1,7 @@
-from sqlalchemy.orm import DeclarativeBase, mapped_column, Mapped, Session
+from sqlalchemy.orm import DeclarativeBase, mapped_column, Mapped
 from sqlalchemy.engine import create_engine, Engine
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.sql.sqltypes import DateTime
 from pydantic_core import MultiHostUrl
 from pydantic import PostgresDsn
 from app.core.logging import logger
@@ -12,14 +13,16 @@ from app.core.config import settings
 
 class Base(DeclarativeBase):
     created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
         default=datetime.now(constants.tzinfo), nullable=False
     )
     updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
         default=datetime.now(constants.tzinfo),
         onupdate=datetime.now(constants.tzinfo),
         nullable=False,
     )
-    deleted_at: Mapped[datetime] = mapped_column(nullable=True)
+    deleted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class DBConnection(metaclass=SingletonMetaClass):

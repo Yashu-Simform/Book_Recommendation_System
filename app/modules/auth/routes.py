@@ -11,8 +11,11 @@ from app.modules.auth.schemas import (
 )
 from app.modules.auth import services as auth_services
 from app.core.schemas import ResponseSchema
+from app.modules.auth import social_auth
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
+
+router.include_router(social_auth.router)
 
 
 @router.post(

@@ -113,6 +113,7 @@ async def delete_book(
     summary="Get all books",
     response_model=list[BookData],
     status_code=status.HTTP_200_OK,
+    tags=["Filters for Books"]
 )
 async def get_books(
     session: Annotated[AsyncSession, Depends(get_db)],

@@ -24,7 +24,7 @@ async def get_top_n_rated_items(session: AsyncSession, items: int):
         columns = result.keys()
 
         fetched_values = result.scalars().fetchmany(items)
-
+  
         response = []
         for rank, r in enumerate(fetched_values):
             book = Book(
