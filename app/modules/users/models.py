@@ -7,10 +7,13 @@ from datetime import datetime, date
 import uuid
 from typing import List
 
+
 class User(Base):
     __tablename__ = "user"
 
-    id: Mapped[str] = mapped_column(primary_key=True, default= lambda: str(uuid.uuid4()), unique=True, nullable=False)
+    id: Mapped[str] = mapped_column(
+        primary_key=True, default=lambda: str(uuid.uuid4()), unique=True, nullable=False
+    )
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     password: Mapped[str] = mapped_column(String(255), nullable=False)
     first_name: Mapped[str] = mapped_column(String(128), nullable=True)

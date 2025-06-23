@@ -1,15 +1,24 @@
-from pydantic import BaseModel, EmailStr, field_validator, field_serializer, Field, SecretStr
+from pydantic import (
+    BaseModel,
+    EmailStr,
+    field_validator,
+    field_serializer,
+    Field,
+    SecretStr,
+)
 from string import punctuation
+
 
 class UserBase(BaseModel):
     email: EmailStr
     password: str
 
+
 class UserSignup(UserBase):
     first_name: str = Field(default=None)
     last_name: str = Field(default=None)
 
-    @field_validator('password', mode='after')
+    @field_validator("password", mode="after")
     @classmethod
     def validate_password(cls, value: str) -> str:
         if not value:
@@ -49,34 +58,40 @@ class UserSignup(UserBase):
             )
 
         return value
-    
-    @field_serializer('first_name', 'last_name')
+
+    @field_serializer("first_name", "last_name")
     def validate_first_name(self, name: str | None) -> str:
-        if not name: 
+        if not name:
             return None
         name = name.strip()
         if not name:
             return None
         return name if len(name) > 0 else None
-    
+
+
 class UserLogin(UserBase):
-    scopes: str = ''
+    scopes: str = ""
+
 
 class UserLoginDocs(BaseModel):
     username: str
     password: SecretStr
-    scope: str = ''
+    scope: str = ""
+
 
 class SuperUserCreate(UserSignup):
     is_superuser: bool = Field(default=True)
+
 
 class Token(BaseModel):
     access_token: str
     token_type: str
 
+
 class PayloadSchema(BaseModel):
     id: str
     scopes: list[str] = []
+
 
 class AuthenticatedUser(BaseModel):
     id: str

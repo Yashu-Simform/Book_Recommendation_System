@@ -1,4 +1,12 @@
-from pydantic import BaseModel, EmailStr, field_validator, field_serializer, Field, SecretStr
+from pydantic import (
+    BaseModel,
+    EmailStr,
+    field_validator,
+    field_serializer,
+    Field,
+    SecretStr,
+)
+
 
 class UserData(BaseModel):
     id: str

@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Recommendation System</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --light-bg: #f8f9fa;
+            --dark-bg: #2c3e50;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: var(--primary-color);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .navbar-brand {
+            font-weight: bold;
+            color: white !important;
+        }
+
+        .auth-container {
+            min-height: calc(100vh - 76px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
+        }
+
+        .auth-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 450px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .auth-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .auth-header h2 {
+            color: var(--primary-color);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .auth-header p {
+            color: #6c757d;
+            margin-bottom: 0;
+        }
+
+        .form-control {
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--secondary-color), #5dade2);
+            border: none;
+            border-radius: 10px;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+
+        .btn-github {
+            background: #333;
+            border: none;
+            border-radius: 10px;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            color: white;
+        }
+
+        .btn-github:hover {
+            background: #444;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            color: white;
+        }
+
+        .divider {
+            text-align: center;
+            margin: 1.5rem 0;
+            position: relative;
+        }
+
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #dee2e6;
+        }
+
+        .divider span {
+            background: white;
+            padding: 0 1rem;
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        .auth-switch {
+            text-align: center;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .auth-switch a {
+            color: var(--secondary-color);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .auth-switch a:hover {
+            text-decoration: underline;
+        }
+
+        .alert {
+            border: none;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+        }
+
+        .spinner-border-sm {
+            width: 1rem;
+            height: 1rem;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .input-group {
+            margin-bottom: 1rem;
+        }
+
+        .input-group-text {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 10px 0 0 10px;
+        }
+
+        .form-control.with-icon {
+            border-left: none;
+            border-radius: 0 10px 10px 0;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .loading-spinner {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#" onclick="showHome()">
+                <i class="fas fa-book-reader me-2"></i>
+                BookRec System
+            </a>
+            <div class="navbar-nav ms-auto" id="navbarItems">
+                <a class="nav-link" href="#" onclick="showLogin()" id="loginNav">Login</a>
+                <a class="nav-link" href="#" onclick="showSignup()" id="signupNav">Sign Up</a>
+                <a class="nav-link" href="#" onclick="logout()" id="logoutNav" style="display: none;">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container-fluid">
+        <!-- Home Page -->
+        <div id="homePage" class="auth-container">
+            <div class="auth-card">
+                <div class="auth-header">
+                    <h2><i class="fas fa-book-open me-2"></i>Welcome to BookRec</h2>
+                    <p>Discover your next favorite book with personalized recommendations</p>
+                </div>
+                <div class="text-center">
+                    <button class="btn btn-primary me-2" onclick="showLogin()">
+                        <i class="fas fa-sign-in-alt me-2"></i>Login
+                    </button>
+                    <button class="btn btn-outline-primary" onclick="showSignup()">
+                        <i class="fas fa-user-plus me-2"></i>Sign Up
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Login Form -->
+        <div id="loginPage" class="auth-container hidden">
+            <div class="auth-card">
+                <div class="auth-header">
+                    <h2><i class="fas fa-sign-in-alt me-2"></i>Welcome Back</h2>
+                    <p>Please sign in to your account</p>
+                </div>
+
+                <div id="loginAlert"></div>
+
+                <form id="loginForm">
+                    <div class="input-group mb-3">
+                        <span class="input-group-text">
+                            <i class="fas fa-envelope"></i>
+                        </span>
+                        <input type="email" class="form-control with-icon" id="loginEmail" 
+                               placeholder="Enter your email" required>
+                    </div>
+
+                    <div class="input-group mb-3">
+                        <span class="input-group-text">
+                            <i class="fas fa-lock"></i>
+                        </span>
+                        <input type="password" class="form-control with-icon" id="loginPassword" 
+                               placeholder="Enter your password" required>
+                    </div>
+
+                    <div class="d-grid mb-3">
+                        <button type="submit" class="btn btn-primary" id="loginBtn">
+                            <span class="spinner-border spinner-border-sm me-2 hidden" id="loginSpinner"></span>
+                            <i class="fas fa-sign-in-alt me-2"></i>Sign In
+                        </button>
+                    </div>
+                </form>
+
+                <div class="divider">
+                    <span>or</span>
+                </div>
+
+                <div class="d-grid mb-3">
+                    <button class="btn btn-github" onclick="loginWithGithub()">
+                        <i class="fab fa-github me-2"></i>Continue with GitHub
+                    </button>
+                </div>
+
+                <div class="auth-switch">
+                    <p>Don't have an account? <a href="#" onclick="showSignup()">Sign up here</a></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Signup Form -->
+        <div id="signupPage" class="auth-container hidden">
+            <div class="auth-card">
+                <div class="auth-header">
+                    <h2><i class="fas fa-user-plus me-2"></i>Join BookRec</h2>
+                    <p>Create your account to get started</p>
+                </div>
+
+                <div id="signupAlert"></div>
+
+                <form id="signupForm">
+                    <div class="input-group mb-3">
+                        <span class="input-group-text">
+                            <i class="fas fa-user"></i>
+                        </span>
+                        <input type="text" class="form-control with-icon" id="signupName" 
+                               placeholder="Full Name" required>
+                    </div>
+
+                    <div class="input-group mb-3">
+                        <span class="input-group-text">
+                            <i class="fas fa-envelope"></i>
+                        </span>
+                        <input type="email" class="form-control with-icon" id="signupEmail" 
+                               placeholder="Email Address" required>
+                    </div>
+
+                    <div class="input-group mb-3">
+                        <span class="input-group-text">
+                            <i class="fas fa-lock"></i>
+                        </span>
+                        <input type="password" class="form-control with-icon" id="signupPassword" 
+                               placeholder="Password" required minlength="6">
+                    </div>
+
+                    <div class="input-group mb-3">
+                        <span class="input-group-text">
+                            <i class="fas fa-lock"></i>
+                        </span>
+                        <input type="password" class="form-control with-icon" id="confirmPassword" 
+                               placeholder="Confirm Password" required>
+                    </div>
+
+                    <div class="d-grid mb-3">
+                        <button type="submit" class="btn btn-primary" id="signupBtn">
+                            <span class="spinner-border spinner-border-sm me-2 hidden" id="signupSpinner"></span>
+                            <i class="fas fa-user-plus me-2"></i>Create Account
+                        </button>
+                    </div>
+                </form>
+
+                <div class="divider">
+                    <span>or</span>
+                </div>
+
+                <div class="d-grid mb-3">
+                    <button class="btn btn-github" onclick="loginWithGithub()">
+                        <i class="fab fa-github me-2"></i>Continue with GitHub
+                    </button>
+                </div>
+
+                <div class="auth-switch">
+                    <p>Already have an account? <a href="#" onclick="showLogin()">Sign in here</a></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard (shown after login) -->
+        <div id="dashboardPage" class="hidden">
+            <div class="container mt-4">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-body">
+                                <h3><i class="fas fa-tachometer-alt me-2"></i>Dashboard</h3>
+                                <p class="text-muted">Welcome to your book recommendation dashboard!</p>
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    You are successfully logged in. The full dashboard with book management will be implemented next.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="loading-spinner">
+            <div class="spinner-border text-primary mb-3"></div>
+            <p>Processing your request...</p>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Configuration
+        const BASE_URL = "http://localhost:8000";
+        const API_ENDPOINTS = {
+            LOGIN: `${BASE_URL}/auth/login`,
+            SIGNUP: `${BASE_URL}/auth/signup`,
+            GITHUB_LOGIN: `${BASE_URL}/auth/github`
+        };
+
+        // State Management
+        let currentUser = null;
+        let authToken = null;
+
+        // Utility Functions
+        function showAlert(containerId, type, message) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-circle' : 'info-circle'} me-2"></i>
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+        }
+
+        function showLoading(show = true) {
+            const overlay = document.getElementById('loadingOverlay');
+            if (show) {
+                overlay.classList.remove('hidden');
+            } else {
+                overlay.classList.add('hidden');
+            }
+        }
+
+        function toggleSpinner(elementId, show = true) {
+            const spinner = document.getElementById(elementId);
+            if (show) {
+                spinner.classList.remove('hidden');
+            } else {
+                spinner.classList.add('hidden');
+            }
+        }
+
+        // Navigation Functions
+        function showHome() {
+            hideAllPages();
+            document.getElementById('homePage').classList.remove('hidden');
+        }
+
+        function showLogin() {
+            hideAllPages();
+            document.getElementById('loginPage').classList.remove('hidden');
+            document.getElementById('loginForm').reset();
+            document.getElementById('loginAlert').innerHTML = '';
+        }
+
+        function showSignup() {
+            hideAllPages();
+            document.getElementById('signupPage').classList.remove('hidden');
+            document.getElementById('signupForm').reset();
+            document.getElementById('signupAlert').innerHTML = '';
+        }
+
+        function showDashboard() {
+            hideAllPages();
+            document.getElementById('dashboardPage').classList.remove('hidden');
+            updateNavigation(true);
+        }
+
+        function hideAllPages() {
+            const pages = ['homePage', 'loginPage', 'signupPage', 'dashboardPage'];
+            pages.forEach(pageId => {
+                document.getElementById(pageId).classList.add('hidden');
+            });
+        }
+
+        function updateNavigation(isLoggedIn) {
+            const loginNav = document.getElementById('loginNav');
+            const signupNav = document.getElementById('signupNav');
+            const logoutNav = document.getElementById('logoutNav');
+
+            if (isLoggedIn) {
+                loginNav.style.display = 'none';
+                signupNav.style.display = 'none';
+                logoutNav.style.display = 'block';
+            } else {
+                loginNav.style.display = 'block';
+                signupNav.style.display = 'block';
+                logoutNav.style.display = 'none';
+            }
+        }
+
+        // Authentication Functions
+        async function handleLogin(event) {
+            event.preventDefault();
+            
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            if (!email || !password) {
+                showAlert('loginAlert', 'danger', 'Please fill in all fields');
+                return;
+            }
+
+            toggleSpinner('loginSpinner', true);
+            const loginBtn = document.getElementById('loginBtn');
+            loginBtn.disabled = true;
+
+            try {
+                const formData = new FormData();
+                formData.append('username', email);
+                formData.append('password', password);
+                formData.append('scope', 'user-r user-w');
+
+                const response = await fetch(API_ENDPOINTS.LOGIN, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Store auth token and user info
+                    authToken = data.access_token;
+                    currentUser = { email: email };
+                    
+                    // Store in sessionStorage for persistence
+                    sessionStorage.setItem('authToken', authToken);
+                    sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    
+                    showAlert('loginAlert', 'success', 'Login successful! Redirecting...');
+                    
+                    setTimeout(() => {
+                        showDashboard();
+                    }, 1500);
+                } else {
+                    showAlert('loginAlert', 'danger', data.detail || 'Login failed. Please check your credentials.');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showAlert('loginAlert', 'danger', 'Network error. Please try again.');
+            } finally {
+                toggleSpinner('loginSpinner', false);
+                loginBtn.disabled = false;
+            }
+        }
+
+        async function handleSignup(event) {
+            event.preventDefault();
+            
+            const name = document.getElementById('signupName').value;
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            if (!name || !email || !password || !confirmPassword) {
+                showAlert('signupAlert', 'danger', 'Please fill in all fields');
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                showAlert('signupAlert', 'danger', 'Passwords do not match');
+                return;
+            }
+
+            if (password.length < 6) {
+                showAlert('signupAlert', 'danger', 'Password must be at least 6 characters long');
+                return;
+            }
+
+            toggleSpinner('signupSpinner', true);
+            const signupBtn = document.getElementById('signupBtn');
+            signupBtn.disabled = true;
+
+            try {
+                const formData = new FormData();
+                formData.append('name', name);
+                formData.append('email', email);
+                formData.append('password', password);
+
+                const response = await fetch(API_ENDPOINTS.SIGNUP, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showAlert('signupAlert', 'success', 'Account created successfully! You can now login.');
+                    setTimeout(() => {
+                        showLogin();
+                    }, 2000);
+                } else {
+                    showAlert('signupAlert', 'danger', data.detail || 'Signup failed. Please try again.');
+                }
+            } catch (error) {
+                console.error('Signup error:', error);
+                showAlert('signupAlert', 'danger', 'Network error. Please try again.');
+            } finally {
+                toggleSpinner('signupSpinner', false);
+                signupBtn.disabled = false;
+            }
+        }
+
+        function loginWithGithub() {
+            window.location.href = API_ENDPOINTS.GITHUB_LOGIN;
+        }
+
+        function logout() {
+            currentUser = null;
+            authToken = null;
+            sessionStorage.removeItem('authToken');
+            sessionStorage.removeItem('currentUser');
+            updateNavigation(false);
+            showHome();
+        }
+
+        // Initialize App
+        function initializeApp() {
+            // Check for stored auth token
+            const storedToken = sessionStorage.getItem('authToken');
+            const storedUser = sessionStorage.getItem('currentUser');
+            
+            if (storedToken && storedUser) {
+                authToken = storedToken;
+                currentUser = JSON.parse(storedUser);
+                showDashboard();
+            } else {
+                showHome();
+            }
+
+            // Add event listeners
+            document.getElementById('loginForm').addEventListener('submit', handleLogin);
+            document.getElementById('signupForm').addEventListener('submit', handleSignup);
+        }
+
+        // Start the application when DOM is loaded
+        document.addEventListener('DOMContentLoaded', initializeApp);
+    </script>
+</body>
+</html>

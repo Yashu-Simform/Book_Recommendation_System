@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 
+
 class ResponseSchema(BaseModel):
     status: str
     message: str
