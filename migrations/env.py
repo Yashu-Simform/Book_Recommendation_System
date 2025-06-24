@@ -22,6 +22,7 @@ from app.core.db import Base
 from app.modules.users.models import User
 from app.modules.books.models import Book
 from app.modules.ratings.models import Rating
+from app.modules.auth.models import RefreshToken, Blacklist
 target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,

@@ -1,11 +1,11 @@
-from app.core.db import Base
+from app.core.db import Base, AbstractModel
 from sqlalchemy.orm import mapped_column, Mapped, validates, relationship
 from sqlalchemy import String, UniqueConstraint, Index
 import uuid
 from datetime import date
 
 
-class Book(Base):
+class Book(Base, AbstractModel):
     __tablename__ = "book"
 
     id: Mapped[str] = mapped_column(

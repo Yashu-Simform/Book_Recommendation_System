@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, Form, Security
+from fastapi import APIRouter, Depends, status, Form, Security, Header
 from app.dependencies import get_db, is_super_user, get_authenticated_user
 from typing import Annotated
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,6 +12,7 @@ from app.modules.auth.schemas import (
 from app.modules.auth import services as auth_services
 from app.core.schemas import ResponseSchema
 from app.modules.auth import social_auth
+from app.core.logging import logger
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -41,7 +42,7 @@ async def user_login(
             email=credentials.username,
             password=credentials.password.get_secret_value(),
             scopes=credentials.scope,
-        ),
+        )
     )
 
 
@@ -68,3 +69,8 @@ async def create_super_user(
     """
     print(auth_user.email)
     return await auth_services.create_super_user(session, user_data)
+
+# JWT Token Routes
+@router.get('/token/refresh')
+def refresh_token(session: Annotated[AsyncSession ,Depends(get_db)], refresh_token: Annotated[str, Header()], **kwargs):
+    pass

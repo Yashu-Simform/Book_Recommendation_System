@@ -2,7 +2,7 @@ from app.core.db import DBConnection
 from typing import Annotated
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends, HTTPException, status, Security
-from app.core.security import decode_jwt_token, oauth2_scheme
+from app.modules.auth.utils import decode_jwt_token, oauth2_scheme
 from app.modules.auth.schemas import AuthenticatedUser
 from jwt.exceptions import InvalidTokenError
 from app.modules.users import repository as user_repo
@@ -37,7 +37,7 @@ async def get_authenticated_user(
     try:
         payload = decode_jwt_token(token)
         print(f"Decoded payload: {payload}")
-        user_id = payload.get("id")
+        user_id = payload.get("sub")
         if not user_id:
             raise credentials_exception
     except InvalidTokenError as e:

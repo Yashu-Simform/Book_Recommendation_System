@@ -12,6 +12,9 @@ from app.core.config import settings
 
 
 class Base(DeclarativeBase):
+    pass
+
+class AbstractModel:
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=datetime.now(constants.tzinfo), nullable=False

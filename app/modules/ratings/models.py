@@ -1,13 +1,13 @@
 from sqlalchemy.orm import mapped_column, Mapped, relationship, validates
 from sqlalchemy import ForeignKey, Numeric, CheckConstraint, UniqueConstraint, Index
-from app.core.db import Base
+from app.core.db import Base, AbstractModel
 import uuid
 from app.modules.books import models as book_model
 from app.modules.users import models as user_model
 from typing import List
 
 
-class Rating(Base):
+class Rating(Base, AbstractModel):
     """
     Rating model for the application.
     This model represents the ratings given by users to books.

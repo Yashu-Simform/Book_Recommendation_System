@@ -16,7 +16,8 @@ class Settings(BaseSettings):
 
     secret_key: str
     jwt_hashing_algorithm: str = "HS256"
-    access_token_expire_minutes: int = 30
+    access_token_expiry_seconds: int = 15 * 60 # Default 30 minutes
+    refresh_token_expiry_days: int = 3 # Default 3 days
 
     tz: str = "Asia/Kolkata"
 

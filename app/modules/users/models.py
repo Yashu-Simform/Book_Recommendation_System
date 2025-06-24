@@ -1,4 +1,4 @@
-from app.core.db import Base
+from app.core.db import Base, AbstractModel
 from sqlalchemy import Column, Integer, String, Boolean
 from sqlalchemy.orm import mapped_column, validates, Mapped, relationship
 from string import punctuation
@@ -8,7 +8,7 @@ import uuid
 from typing import List
 
 
-class User(Base):
+class User(Base, AbstractModel):
     __tablename__ = "user"
 
     id: Mapped[str] = mapped_column(

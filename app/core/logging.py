@@ -31,7 +31,7 @@ log_config = {
             "maxBytes": 10485760,  # 10MB
             "backupCount": 7,  # Keep 7 days of logs
             "formatter": "json",
-            "level": "INFO"
+            "level": "DEBUG"
         }
     },
     "loggers": {
@@ -42,7 +42,8 @@ log_config = {
         },
         "app": {  # Custom logger for your app
             "handlers": ["console", "file"],
-            "level": settings.log_level.upper() if settings.log_level else "DEBUG",
+            # "level": settings.log_level.upper() if settings.log_level else "DEBUG",
+            "level": "DEBUG",
             "propagate": False
         },
         "uvicorn": {  # Uvicorn logger

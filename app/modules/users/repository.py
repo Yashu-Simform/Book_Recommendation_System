@@ -4,7 +4,7 @@ from sqlalchemy import select
 from app.modules.users.models import User
 from app.core.logging import logger
 from fastapi import HTTPException, status
-from app.core.security import get_password_hash
+from app.core.utils import get_password_hash
 from psycopg2.errors import UniqueViolation
 from app.modules.users.exceptions import UserAlreadyExistsException
 from app.core.utils import extract_violating_column

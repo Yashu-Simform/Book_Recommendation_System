@@ -7,7 +7,10 @@ from pydantic import (
     SecretStr,
 )
 from string import punctuation
-
+from datetime import datetime, timedelta
+from app.core.constants import tzinfo
+from app.core.config import settings
+import uuid
 
 class UserBase(BaseModel):
     email: EmailStr
@@ -87,10 +90,23 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
+class TokenPair(BaseModel):
+    access_token: str
+    refresh_token: str
+
 
 class PayloadSchema(BaseModel):
-    id: str
+    sub: str
+    iat: datetime = datetime.now(tz=tzinfo)
+    exp: timedelta = timedelta(seconds=settings.access_token_expiry_seconds)
+    jti: str = uuid.uuid4()
     scopes: list[str] = []
+
+class RefreshToken(BaseModel):
+    user_id: str
+    token_jti: str
+    expires_at: datetime = datetime.now(tzinfo)+timedelta(days=settings.refresh_token_expiry_days)
+    replaced_by: str = None
 
 
 class AuthenticatedUser(BaseModel):
