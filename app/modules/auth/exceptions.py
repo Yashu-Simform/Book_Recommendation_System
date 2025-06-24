@@ -11,3 +11,10 @@ class TokenDoesNotExists(Exception):
 
     def __str__(self):
         return self.msg
+    
+class InvalidToken(Exception):
+    def __init__(self, msg='Token is invalid!'):
+        self.msg = msg
+
+    def __str__(self):
+        return self.msg

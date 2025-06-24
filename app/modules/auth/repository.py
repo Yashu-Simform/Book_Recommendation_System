@@ -1,52 +1,104 @@
 from app.modules.auth.models import RefreshToken
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from app.modules.auth.exceptions import TokenAlreadyExist, TokenDoesNotExists
+from app.modules.auth import exceptions as auth_exc
 from app.core.logging import logger
+from app.modules.users import models as user_model
+from app.core.utils import now
 
-def add_token(session: Session, refresh_token: dict):
-    stmt = select(RefreshToken).where(RefreshToken.token_jti==refresh_token.get('token_jti', ''), RefreshToken.revoked)
-    token = session.execute(stmt).first()
-
-    if token:
-        raise TokenAlreadyExist
+async def create_ref_token(session: AsyncSession, user_id: str):
     
-    token = RefreshToken(**refresh_token)
+    token = RefreshToken(user_id=user_id)
     try:
-        session.add(token)
-        session.commit()
+        await session.add(token)
+        await session.commit()
         logger.debug('Refresh token added successfully.')
     except Exception as e:
-        session.rollback()
+        await session.rollback()
         logger.debug('Rolled back from commiting the refresh token!')
         logger.debug(str(e))
         raise e
         
-    return str(token)
+    return token
 
-def refresh_token(session: Session, refresh_token: str = ''):
-    '''
-        A method to refresh token pair
-        It generate new Refresh Token and revokes the previous one.
-    '''
-    stmt = select(RefreshToken).where(RefreshToken.token_jti==refresh_token)
-    token = session.execute(stmt).scalars().first()
+async def get_ref_token(session: AsyncSession, ref_token: str):
+    stmt = select(RefreshToken).where(RefreshToken.token_jti==ref_token)
+    result = await session.execute(stmt)
+    token = result.scalars().first()
 
     if not token:
-        raise TokenDoesNotExists
+        raise auth_exc.TokenDoesNotExists
+    
+    return token
+
+async def revoke_latest_ref_token(session: AsyncSession, user_id: str, replaced_by: str):
+    '''
+        Function: Revokes the latest issued token.
+        Args:
+            session: AsyncSession;  |   AsyncSession object for interacting with the database.
+            user_id: str;   |    ID of the user
+        Return Type:
+            None
+    '''
+    stmt = select(RefreshToken).where((RefreshToken.user_id==user_id), (not RefreshToken.revoked))
+    result = await session.execute(stmt)
+    latest_token = result.scalars().first()
+
+    if not latest_token:
+        raise auth_exc.InvalidToken
+    
+    latest_token.revoked = True
+    latest_token.replaced_by = replaced_by
+
+    try:
+        await session.commit()
+    except Exception as e:
+        await session.rollback()
+        logger.debug(f'Token Revoking failed for record id-{latest_token.id}, transaction rolled back.')
+        raise e
+
+async def rotate_ref_token(session: AsyncSession, refresh_token: str = ''):
+    '''
+        Function: A method to refresh token pair
+        It generate new Refresh Token and revokes the previous one.
+        Args:
+            session: AsyncSession;  |   AsyncSession object for interacting with the database.
+            refresh_token: str;
+    '''
+    stmt = select(RefreshToken).where(RefreshToken.token_jti==refresh_token)
+    result = await session.execute(stmt)
+    token = result.scalars().first()
+
+    if not token:
+        raise auth_exc.TokenDoesNotExists
     
     token.revoked = True
     new_refreshed_token = RefreshToken(user_id=token.user_id)
     token.replaced_by = str(new_refreshed_token)
 
     try:
-        session.add(new_refreshed_token)
-        session.commit()
+        await session.add(new_refreshed_token)
+        await session.commit()
         logger.debug('Token revoked.')
     except Exception as e:
-        session.rollback()
+        await session.rollback()
         logger.debug('Transaction is Rollbacked!')
         logger.debug(str(e))
         raise e
 
     return str(new_refreshed_token)
+
+async def validate_ref_token(session: AsyncSession, ref_token: str):
+    token = await get_ref_token(session, ref_token)
+
+    curr_time = now()
+
+    if token.expires_at >= curr_time:
+        # Ref Token Expired 
+        return auth_exc.InvalidToken('Ref Token expired.')
+    elif token.revoked:
+        # Token is Revoked
+        logger.debug('Ref Token is revoked.')
+        return auth_exc.InvalidToken('Ref Token is already revoked.')
+    
+    return token

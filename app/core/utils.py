@@ -1,5 +1,7 @@
 import re
 from passlib.context import CryptContext
+from datetime import datetime
+from app.core.constants import tzinfo
 
 def extract_violating_column(error_msg: str):
     """
@@ -23,3 +25,6 @@ def get_password_hash(password: str):
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
+
+def now():
+    return datetime.now(tz=tzinfo)
