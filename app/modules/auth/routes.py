@@ -45,6 +45,19 @@ async def user_login(
         )
     )
 
+@router.post("/logout", status_code=status.HTTP_200_OK)
+async def user_logout(
+    session: Annotated[AsyncSession, Depends(get_db)],
+    user: Annotated[
+        AuthenticatedUser, Security(get_authenticated_user, scopes=[])
+    ]
+):
+    pass
+
+@router.post('/token/refresh', status_code=status.HTTP_200_OK)
+async def get_new_access_token(session: AsyncSession, ref_token: Annotated[str, Header()]):
+    return await auth_services.get_new_access_token(session,ref_token)
+
 
 @router.post(
     "/create_super_user",

@@ -15,6 +15,7 @@ from app.modules.auth.utils import create_jwt_token
 from app.core.utils import verify_password
 from app.core.logging import logger
 from app.modules.users.exceptions import UserAlreadyExistsException
+from app.modules.auth import exceptions as auth_exc
 
 
 async def user_signup(session: AsyncSession, user_data: UserSignup):
@@ -43,10 +44,9 @@ async def user_login(session: AsyncSession, credentials: UserLogin):
         access_token = create_jwt_token(access_payload)
 
         # Refresh Token
-        refresh_token = auth_schemas.RefreshToken(user_id=user.id, token_jti=uuid.uuid4())
-        refresh_token_str = auth_repo.add_token(session, refresh_token.model_dump())
-
-        return auth_schemas.TokenPair(access_token=access_token, refresh_token=refresh_token_str)
+        ref_token = auth_repo.create_ref_token(user_id=user.id)
+        auth_repo.revoke_latest_ref_token(session,user_id=user.id,replaced_by=str(ref_token))
+        return auth_schemas.TokenPair(access_token=access_token, refresh_token=str(ref_token))
         # return Token(access_token=access_token, token_type="bearer")
 
     logger.info("password not verified")
@@ -55,6 +55,9 @@ async def user_login(session: AsyncSession, credentials: UserLogin):
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
+async def user_logout(session: AsyncSession, user):
+    pass
 
 
 async def create_super_user(session: AsyncSession, user_data: SuperUserCreate):
@@ -69,6 +72,19 @@ async def create_super_user(session: AsyncSession, user_data: SuperUserCreate):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
+        )
+    
+async def get_new_access_token(session: AsyncSession, ref_token: str):
+    try:
+        reftoken = await auth_repo.validate_ref_token(session, ref_token)
+        # TODO: Create new Access Token
+        access_payload = PayloadSchema(sub=reftoken.user_id)
+        access_token = create_jwt_token(access_payload)
+        return access_token
+    except auth_exc.InvalidToken as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
         )
 
 async def refresh_token(session: AsyncSession, refresh_token: str):
