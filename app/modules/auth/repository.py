@@ -22,7 +22,7 @@ async def create_ref_token(session: AsyncSession, user_id: str):
     return token
 
 async def get_ref_token(session: AsyncSession, ref_token: str):
-    stmt = select(RefreshToken).where((RefreshToken.token_jti==ref_token), (not RefreshToken.revoked))
+    stmt = select(RefreshToken).where((RefreshToken.token_jti==ref_token), (RefreshToken.revoked == False))
     result = await session.execute(stmt)
     token = result.scalars().first()
 

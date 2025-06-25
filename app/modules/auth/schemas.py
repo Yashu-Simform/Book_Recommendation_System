@@ -115,7 +115,7 @@ class RefreshToken(BaseModel):
     user_id: str
     token_jti: str
     expires_at: datetime = datetime.now(tzinfo)+timedelta(days=settings.refresh_token_expiry_days)
-    replaced_by: str = None
+    replaced_by: str | None = None
 
     def __str__(self):
         return self.token_jti

@@ -60,6 +60,7 @@ async def get_authenticated_user(
     user = auth_schemas.AuthenticatedUser.model_validate(rawuser)
     return user
 
+
 async def get_access_token(token: Annotated[str, Depends(oauth2_scheme)]):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -73,22 +74,38 @@ async def get_access_token(token: Annotated[str, Depends(oauth2_scheme)]):
         user_id = payload.get("sub")
         if not user_id:
             raise credentials_exception
-        
+
         return auth_schemas.PayloadSchema(**payload)
     except InvalidTokenError as e:
         print(f"Invalid token error: {e}")
         raise credentials_exception
 
-async def get_tokens(session: Annotated[AsyncSession, Depends(get_db)], access_token: Annotated[auth_schemas.PayloadSchema, Depends(get_access_token)], ref_token: Annotated[str, Header()]):
-    ref_token_db = await auth_repo.get_ref_token(session, ref_token)
-    ref_token_inst = auth_schemas.RefreshToken(user_id=ref_token_db.user_id, token_jti=ref_token_db.token_jti, expires_at=ref_token_db.expires_at, replaced_by=ref_token_db.replaced_by)
-    return {'access': access_token, 'refresh': ref_token_inst}
 
-async def get_auth_user(session: Annotated[AsyncSession, Depends(get_db)], tokens: Annotated[dict, Depends(get_tokens)]) -> auth_schemas.AuthenticatedUser:
-    access_token = tokens.get('access')
-    rawuser = await user_repo.get_user(session, id=access_token.get('sub'))
+async def get_tokens(
+    session: Annotated[AsyncSession, Depends(get_db)],
+    access_token: Annotated[auth_schemas.PayloadSchema, Depends(get_access_token)],
+    ref_token: Annotated[str, Header(convert_underscores=False)],
+):
+    print('---------------------------------',ref_token)
+    ref_token_db = await auth_repo.get_ref_token(session, ref_token)
+    ref_token_inst = auth_schemas.RefreshToken(
+        user_id=ref_token_db.user_id,
+        token_jti=ref_token_db.token_jti,
+        expires_at=ref_token_db.expires_at,
+        replaced_by=ref_token_db.replaced_by,
+    )
+    return {"access": access_token, "refresh": ref_token_inst}
+
+
+async def get_auth_user(
+    session: Annotated[AsyncSession, Depends(get_db)],
+    tokens: Annotated[dict, Depends(get_tokens)],
+) -> auth_schemas.AuthenticatedUser:
+    access_token = tokens.get("access")
+    rawuser = await user_repo.get_user(session, id=access_token.model_dump().get("sub"))
     user = auth_schemas.AuthenticatedUser.model_validate(rawuser)
     return user
+
 
 async def is_super_user(
     user: Annotated[auth_schemas.AuthenticatedUser, Depends(get_authenticated_user)],
