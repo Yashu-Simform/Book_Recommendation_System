@@ -10,7 +10,7 @@ async def create_ref_token(session: AsyncSession, user_id: str):
     
     token = RefreshToken(user_id=user_id)
     try:
-        await session.add(token)
+        session.add(token)
         await session.commit()
         logger.debug('Refresh token added successfully.')
     except Exception as e:
@@ -22,12 +22,12 @@ async def create_ref_token(session: AsyncSession, user_id: str):
     return token
 
 async def get_ref_token(session: AsyncSession, ref_token: str):
-    stmt = select(RefreshToken).where(RefreshToken.token_jti==ref_token)
+    stmt = select(RefreshToken).where((RefreshToken.token_jti==ref_token), (not RefreshToken.revoked))
     result = await session.execute(stmt)
     token = result.scalars().first()
 
     if not token:
-        raise auth_exc.TokenDoesNotExists
+        raise auth_exc.TokenNotFound
     
     return token
 
@@ -44,8 +44,12 @@ async def revoke_latest_ref_token(session: AsyncSession, user_id: str, replaced_
     result = await session.execute(stmt)
     latest_token = result.scalars().first()
 
+    # TODO: Edge Case - Check for First Time Token Creation
+
     if not latest_token:
-        raise auth_exc.InvalidToken
+        # TODO: What if we just reassign a new token if not found the latest one.
+        # raise auth_exc.InvalidToken
+        return None
     
     latest_token.revoked = True
     latest_token.replaced_by = replaced_by
@@ -70,14 +74,14 @@ async def rotate_ref_token(session: AsyncSession, refresh_token: str = ''):
     token = result.scalars().first()
 
     if not token:
-        raise auth_exc.TokenDoesNotExists
+        raise auth_exc.TokenNotFound
     
     token.revoked = True
     new_refreshed_token = RefreshToken(user_id=token.user_id)
     token.replaced_by = str(new_refreshed_token)
 
     try:
-        await session.add(new_refreshed_token)
+        session.add(new_refreshed_token)
         await session.commit()
         logger.debug('Token revoked.')
     except Exception as e:
@@ -95,10 +99,10 @@ async def validate_ref_token(session: AsyncSession, ref_token: str):
 
     if token.expires_at >= curr_time:
         # Ref Token Expired 
-        return auth_exc.InvalidToken('Ref Token expired.')
+        raise auth_exc.InvalidToken('Ref Token expired.')
     elif token.revoked:
         # Token is Revoked
         logger.debug('Ref Token is revoked.')
-        return auth_exc.InvalidToken('Ref Token is already revoked.')
+        raise auth_exc.InvalidToken('Ref Token is revoked.')
     
     return token

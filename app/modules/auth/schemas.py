@@ -93,20 +93,32 @@ class Token(BaseModel):
 class TokenPair(BaseModel):
     access_token: str
     refresh_token: str
+    token_type: str = "bearer"
 
 
-class PayloadSchema(BaseModel):
+class AccessToken(BaseModel):
     sub: str
     iat: datetime = datetime.now(tz=tzinfo)
     exp: timedelta = timedelta(seconds=settings.access_token_expiry_seconds)
     jti: str = uuid.uuid4()
     scopes: list[str] = []
 
+class PayloadSchema(BaseModel):
+    sub: str
+    iat: int
+    exp: int
+    jti: str
+    scopes: list[str] = []
+
+
 class RefreshToken(BaseModel):
     user_id: str
     token_jti: str
     expires_at: datetime = datetime.now(tzinfo)+timedelta(days=settings.refresh_token_expiry_days)
     replaced_by: str = None
+
+    def __str__(self):
+        return self.token_jti
 
 
 class AuthenticatedUser(BaseModel):

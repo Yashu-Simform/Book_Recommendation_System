@@ -5,7 +5,7 @@ class TokenAlreadyExist(Exception):
     def __str__(self):
         return self.msg
     
-class TokenDoesNotExists(Exception):
+class TokenNotFound(Exception):
     def __init__(self, msg='Token Does Not Exists!'):
         self.msg = msg
 

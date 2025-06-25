@@ -7,3 +7,17 @@ class UserAlreadyExistsException(Exception):
 
     def __str__(self):
         return f"UserAlreadyExistsException: {self.message}"
+
+class UserNotFound(Exception):
+    def __init__(self, msg='User Not Found!'):
+        self.msg = msg
+
+    def __str__(self):
+        return self.msg
+    
+class UniqueIdNotProvided(Exception):
+    def __init__(self, msg = 'No Unique ID provided to get the User.'):
+        self.msg = msg
+
+    def __str__(self):
+        return self.msg

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, status, Form, Security, Header
-from app.dependencies import get_db, is_super_user, get_authenticated_user
+from app.dependencies import get_db, is_super_user, get_authenticated_user, get_auth_user
 from typing import Annotated
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.modules.auth.schemas import (
@@ -49,14 +49,15 @@ async def user_login(
 async def user_logout(
     session: Annotated[AsyncSession, Depends(get_db)],
     user: Annotated[
-        AuthenticatedUser, Security(get_authenticated_user, scopes=[])
+        AuthenticatedUser, Depends(get_auth_user)
     ]
 ):
-    pass
+    print(user.email)
 
 @router.post('/token/refresh', status_code=status.HTTP_200_OK)
-async def get_new_access_token(session: AsyncSession, ref_token: Annotated[str, Header()]):
-    return await auth_services.get_new_access_token(session,ref_token)
+async def get_new_access_token(session: Annotated[AsyncSession, Depends(get_db)], ref_token: Annotated[str, Header()]):
+    access_token = await auth_services.get_new_access_token(session,ref_token)
+    return {"access": access_token}
 
 
 @router.post(
@@ -68,7 +69,7 @@ async def create_super_user(
     session: Annotated[AsyncSession, Depends(get_db)],
     user_data: Annotated[SuperUserCreate, Form()],
     auth_user: Annotated[
-        AuthenticatedUser, Security(get_authenticated_user, scopes=["user-r", "user-w"])
+        AuthenticatedUser, Security(get_auth_user, scopes=["user-r", "user-w"])
     ],
 ):
     """
@@ -82,8 +83,3 @@ async def create_super_user(
     """
     print(auth_user.email)
     return await auth_services.create_super_user(session, user_data)
-
-# JWT Token Routes
-@router.get('/token/refresh')
-def refresh_token(session: Annotated[AsyncSession ,Depends(get_db)], refresh_token: Annotated[str, Header()], **kwargs):
-    pass

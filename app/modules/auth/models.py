@@ -8,10 +8,10 @@ import uuid
 class RefreshToken(Base, AbstractModel):
     __tablename__ = "refresh_tokens"
     id = mapped_column(Integer, primary_key=True, autoincrement=True)
-    token_jti = mapped_column(String, unique=True, index=True, default=uuid.uuid4())
+    token_jti = mapped_column(String, unique=True, index=True, default=str(uuid.uuid4()))
     user_id = mapped_column(String, index=True)
-    issued_at = mapped_column(DateTime, default=datetime.now(constants.tzinfo))
-    expires_at = mapped_column(DateTime, default=datetime.now(constants.tzinfo)+timedelta(days=settings.refresh_token_expiry_days))
+    issued_at = mapped_column(DateTime(timezone=True), default=datetime.now(constants.tzinfo))
+    expires_at = mapped_column(DateTime(timezone=True), default=datetime.now(constants.tzinfo)+timedelta(days=settings.refresh_token_expiry_days))
     revoked = mapped_column(Boolean, default=False)
     replaced_by = mapped_column(String, nullable=True)
 
@@ -22,4 +22,4 @@ class Blacklist(Base, AbstractModel):
     __tablename__ = "jwt_blacklist"
     id = mapped_column(Integer, primary_key=True, autoincrement=True)
     jti = mapped_column(String, unique=True, index=True)
-    revoked_at = mapped_column(DateTime, default=datetime.now(constants.tzinfo))
+    revoked_at = mapped_column(DateTime(timezone=True), default=datetime.now(constants.tzinfo))
