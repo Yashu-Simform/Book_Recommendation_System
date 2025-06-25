@@ -59,6 +59,10 @@ async def get_new_access_token(session: Annotated[AsyncSession, Depends(get_db)]
     access_token = await auth_services.get_new_access_token(session,ref_token)
     return {"access": access_token}
 
+@router.post('/token/revoke', status_code=status.HTTP_200_OK)
+async def token_revoke(session: AsyncSession, ref_token: str):
+    pass
+
 
 @router.post(
     "/create_super_user",

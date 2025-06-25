@@ -26,3 +26,16 @@ app.include_router(recommend_routes.router)
 @app.get("/")
 def health_check():
     return "Server is running ..."
+
+from fastapi.responses import StreamingResponse
+from typing import Generator
+import time
+def generate_data():
+    # Simulates streaming data line by line
+    for i in range(1, 6):
+        yield f"Line {i}\n"
+        time.sleep(1)  # simulate delay
+
+@app.get("/stream")
+async def stream():
+    return StreamingResponse(generate_data(), media_type="text/plain")

@@ -35,11 +35,11 @@ log_config = {
         }
     },
     "loggers": {
-        "": {  # Root logger
-            "handlers": ["console", "file"],
-            "level": "INFO",
-            "propagate": False
-        },
+        # "": {  # Root logger
+        #     "handlers": ["console", "file"],
+        #     "level": "INFO",
+        #     "propagate": False
+        # },
         "app": {  # Custom logger for your app
             "handlers": ["console", "file"],
             # "level": settings.log_level.upper() if settings.log_level else "DEBUG",
