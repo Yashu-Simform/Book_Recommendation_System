@@ -81,7 +81,11 @@ async def get_access_token(token: Annotated[str, Depends(oauth2_scheme)]):
         logger.debug(f"Decoded payload: {payload}")
         user_id = payload.get("sub")
         if await auth_services.is_token_blacklisted(payload.get('jti')):
-            raise credentials_exception
+            raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid Token!",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
         if not user_id:
             raise credentials_exception
 
