@@ -98,7 +98,8 @@ async def get_new_access_token(session: AsyncSession, ref_token: str):
             detail=str(e)
         )
 
-async def refresh_token(session: AsyncSession, refresh_token: str):
+async def token_revoke(session: AsyncSession, ref_token: str):
     # TODO 1. Revoke current refresh token
+    await auth_repo.revoke_latest_ref_token(session, ref_token)
     # TODO 2. Generate new refresh token
     pass
