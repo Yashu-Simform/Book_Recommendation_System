@@ -1,4 +1,4 @@
-class TokenAlreadyExist(Exception):
+class ObjectAlreadyExist(Exception):
     def __init__(self, msg = 'Token Already Exists!'):
         self.msg = msg
 

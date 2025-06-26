@@ -6,3 +6,4 @@ class ResponseSchema(BaseModel):
     message: str
     data: dict = None
     error: str = None
+    status_code: int

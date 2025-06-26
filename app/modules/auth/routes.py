@@ -45,24 +45,28 @@ async def user_login(
         )
     )
 
-@router.post("/logout", status_code=status.HTTP_200_OK)
-async def user_logout(
-    session: Annotated[AsyncSession, Depends(get_db)],
-    user: Annotated[
-        AuthenticatedUser, Depends(get_auth_user)
-    ]
-):
-    print(user.email)
-
 @router.post('/token/refresh', status_code=status.HTTP_200_OK)
-async def get_new_access_token(session: Annotated[AsyncSession, Depends(get_db)], ref_token: Annotated[str, Header()]):
+async def get_new_access_token(session: Annotated[AsyncSession, Depends(get_db)], ref_token: Annotated[str, Header(convert_underscores=False)]):
     access_token = await auth_services.get_new_access_token(session,ref_token)
     return {"access": access_token}
 
-@router.post('/token/revoke', status_code=status.HTTP_200_OK)
-async def token_revoke(session: AsyncSession, ref_token: str):
-    pass
+@router.post('/token/revoke', status_code=status.HTTP_200_OK, response_model= ResponseSchema)
+async def token_revoke(session: Annotated[AsyncSession, Depends(get_db)], ref_token: Annotated[str, Header()]):
+    '''
+        Function: Revoke the refresh token
+        Args:
+            session: AsyncSession;  |   AsyncSession object for interacting with the database.
+            ref_token: str  |   Expected in header of the request.
+    '''
+    return await auth_services.token_revoke(session, ref_token)
 
+@router.post("token/rotate",response_model = ResponseSchema)
+async def token_rotate(session: Annotated[AsyncSession, Depends(get_db)], ref_token: Annotated[str, Header()]):
+    return await auth_services.token_rotate(session, ref_token)
+
+@router.post("/token/blacklist", response_model = ResponseSchema)
+async def token_blacklist(session: Annotated[AsyncSession, Depends(get_db)], access_token: Annotated[str, Header(convert_underscores=False)]):
+    return await auth_services.token_blacklist(access_token)
 
 @router.post(
     "/create_super_user",

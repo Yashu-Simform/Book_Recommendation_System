@@ -9,7 +9,7 @@ class RefreshToken(Base, AbstractModel):
     __tablename__ = "refresh_tokens"
     id = mapped_column(Integer, primary_key=True, autoincrement=True)
     token_jti = mapped_column(String, unique=True, index=True, default=str(uuid.uuid4()))
-    user_id = mapped_column(String, index=True)
+    user_id = mapped_column(String)
     issued_at = mapped_column(DateTime(timezone=True), default=datetime.now(constants.tzinfo))
     expires_at = mapped_column(DateTime(timezone=True), default=datetime.now(constants.tzinfo)+timedelta(days=settings.refresh_token_expiry_days))
     revoked = mapped_column(Boolean, default=False)

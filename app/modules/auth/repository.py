@@ -1,6 +1,6 @@
-from app.modules.auth.models import RefreshToken
+from app.modules.auth.models import RefreshToken, Blacklist
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, exists
 from app.modules.auth import exceptions as auth_exc
 from app.core.logging import logger
 from app.modules.users import models as user_model
@@ -60,6 +60,23 @@ async def revoke_latest_ref_token(session: AsyncSession, user_id: str, replaced_
         await session.rollback()
         logger.debug(f'Token Revoking failed for record id-{latest_token.id}, transaction rolled back.')
         raise e
+    
+async def token_revoke(session: AsyncSession, ref_token: str):
+    stmt = select(RefreshToken).where(RefreshToken.token_jti==ref_token)
+    result = await session.execute(stmt)
+    token = result.scalars().first()
+
+    if not token:
+        raise auth_exc.TokenNotFound
+    
+    token.revoked = True
+
+    try:
+        await session.commit()
+    except Exception as e:
+        await session.rollback()
+        logger.debug(f'Token Revoking failed for record id-{token.id}, transaction rolled back.')
+        raise e
 
 async def rotate_ref_token(session: AsyncSession, refresh_token: str = ''):
     '''
@@ -106,3 +123,29 @@ async def validate_ref_token(session: AsyncSession, ref_token: str):
         raise auth_exc.InvalidToken('Ref Token is revoked.')
     
     return token
+
+async def token_blacklist(session: AsyncSession, token_jti: str):
+    result = await is_token_blacklisted(session, token_jti)
+
+    if result:
+        raise auth_exc.ObjectAlreadyExist
+
+    blacklisted_token = Blacklist(jti=token_jti)
+    try:
+        session.add(blacklisted_token)
+        await session.commit()
+    except Exception as e:
+        await session.rollback()
+        logger.debug(f'Transaction Rollbacked! Error: {str(e)}')
+
+async def get_blacklisted_token(session: AsyncSession, token_jti: str):
+    stmt = select(Blacklist).filter(Blacklist.jti == token_jti)
+    result = await session.execute(stmt)
+    token = result.scalars().first()
+
+    return token
+
+async def is_token_blacklisted(session: AsyncSession, token_jti: str):
+    stmt = select(exists().where(Blacklist.jti == token_jti))
+    result = await session.scalar(stmt)
+    return result

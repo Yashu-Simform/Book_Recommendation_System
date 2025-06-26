@@ -43,6 +43,10 @@ class Settings(BaseSettings):
         'http://127.0.0.1:8000'
     ]
 
+    # cache configs
+    cache_host: str = 'localhost'
+    cache_port: int = 6379
+
 
     class Config:
         env_file = "env/.env.dev"

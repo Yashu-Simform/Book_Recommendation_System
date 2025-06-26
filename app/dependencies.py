@@ -8,7 +8,8 @@ from app.modules.auth import schemas as auth_schemas
 from jwt.exceptions import InvalidTokenError
 from app.modules.users import repository as user_repo
 from fastapi.security import SecurityScopes
-
+from app.core.logging import logger
+from app.modules.auth import services as auth_services
 
 async def get_db():
     """
@@ -33,16 +34,23 @@ async def get_authenticated_user(
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    print("Token: ", token)
+    logger.debug(f"Token: {token}")
 
     try:
         payload = decode_jwt_token(token)
-        print(f"Decoded payload: {payload}")
+        logger.debug(f"Decoded payload: {payload}")
+        if await auth_repo.is_token_blacklisted(session, payload.get("jti")):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token has been revoked or is blacklisted.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
         user_id = payload.get("sub")
         if not user_id:
             raise credentials_exception
     except InvalidTokenError as e:
-        print(f"Invalid token error: {e}")
+        logger.debug(f"Invalid token error: {e}")
         raise credentials_exception
 
     req_scopes = payload.get("scopes", [])
@@ -70,14 +78,16 @@ async def get_access_token(token: Annotated[str, Depends(oauth2_scheme)]):
 
     try:
         payload = decode_jwt_token(token)
-        print(f"Decoded payload: {payload}")
+        logger.debug(f"Decoded payload: {payload}")
         user_id = payload.get("sub")
+        if await auth_services.is_token_blacklisted(payload.get('jti')):
+            raise credentials_exception
         if not user_id:
             raise credentials_exception
 
         return auth_schemas.PayloadSchema(**payload)
     except InvalidTokenError as e:
-        print(f"Invalid token error: {e}")
+        logger.debug(f"Invalid token error: {e}")
         raise credentials_exception
 
 
@@ -86,7 +96,6 @@ async def get_tokens(
     access_token: Annotated[auth_schemas.PayloadSchema, Depends(get_access_token)],
     ref_token: Annotated[str, Header(convert_underscores=False)],
 ):
-    print('---------------------------------',ref_token)
     ref_token_db = await auth_repo.get_ref_token(session, ref_token)
     ref_token_inst = auth_schemas.RefreshToken(
         user_id=ref_token_db.user_id,
