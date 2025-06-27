@@ -16,3 +16,9 @@ class UserData(BaseModel):
     last_name: str | None = None
     is_active: bool = True
     is_superuser: bool = False
+
+class UserCreateResponse(BaseModel):
+    id: str
+    email: str
+    first_name: str | None = None
+    last_name: str | None = None

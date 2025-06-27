@@ -1,9 +1,7 @@
 from pydantic import BaseModel
-
-
 class ResponseSchema(BaseModel):
-    status: str
+    success: bool = True
     message: str
     data: dict = None
-    error: str = None
+    error: list = None
     status_code: int

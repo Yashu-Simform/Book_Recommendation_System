@@ -2,6 +2,9 @@ import re
 from passlib.context import CryptContext
 from datetime import datetime
 from app.core.constants import tzinfo
+from fastapi import Response
+from typing import Any
+from app.core.schemas import ResponseSchema
 
 def extract_violating_column(error_msg: str):
     """
@@ -28,3 +31,11 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def now():
     return datetime.now(tz=tzinfo)
+
+def success_response(response: Response, message: str, data: Any, status_code: int = 200):
+    response.status_code = status_code
+    return ResponseSchema(success=True, message=message, data=data, status_code=status_code)
+
+def error_response(response: Response, message: str, error: list, status_code: int = 400):
+    response.status_code = status_code
+    return ResponseSchema(success=False, message=message, error=error, status_code=status_code)

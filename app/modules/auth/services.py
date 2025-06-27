@@ -2,17 +2,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.modules.auth.schemas import (
     UserSignup,
     UserLogin,
-    Token,
     PayloadSchema,
     SuperUserCreate,
 )
 import uuid
+from fastapi import Response
 from app.modules.auth import schemas as auth_schemas
 from app.modules.auth import repository as auth_repo
 from app.modules.users import repository as user_repo
 from fastapi import HTTPException, status
-from app.modules.auth.utils import create_jwt_token, decode_jwt_token
-from app.core.utils import verify_password
+from app.modules.auth.utils import create_jwt_token
+from app.core.utils import verify_password, success_response, error_response
 from app.core.logging import logger
 from app.modules.users.exceptions import UserAlreadyExistsException
 from app.modules.auth import exceptions as auth_exc
@@ -20,24 +20,22 @@ from app.core.utils import now
 from datetime import timedelta
 from app.core.config import settings
 from app.core.schemas import ResponseSchema
-from jwt import exceptions as jwt_exc
-from app.core.cache import token_blacklist_cache
+from app.modules.auth.utils import blacklist_token
+from app.modules.users.schemas import UserCreateResponse
 
-async def user_signup(session: AsyncSession, user_data: UserSignup):
+async def user_signup(response: Response, session: AsyncSession, user_data: UserSignup):
     """
     Function to handle user signup.
     This function will contain the logic for signing up a user.
     """
     try:
-        await user_repo.user_create(session, user_data.model_dump(exclude_unset=True))
+        new_user = await user_repo.user_create(session, user_data.model_dump(exclude_unset=True))
+        return success_response(response, message="User registered successfully!", data=UserCreateResponse(id=new_user.id, email=new_user.email, first_name=new_user.first_name, last_name=new_user.last_name).model_dump(), status_code=status.HTTP_200_OK)
     except UserAlreadyExistsException as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e),
-        )
+        return error_response(response, message=str(e), error=[e],status_code=status.HTTP_400_BAD_REQUEST)
 
 
-async def user_login(session: AsyncSession, credentials: UserLogin):
+async def user_login(response: Response, session: AsyncSession, credentials: UserLogin):
     """
     Function to handle user login.
     This function will contain the logic for logging in a user.
@@ -53,18 +51,12 @@ async def user_login(session: AsyncSession, credentials: UserLogin):
         # Refresh Token
         ref_token = await auth_repo.create_ref_token(session=session, user_id=user.id)
         await auth_repo.revoke_latest_ref_token(session,user_id=user.id,replaced_by=str(ref_token))
-        return auth_schemas.TokenPair(access_token=access_token, refresh_token=str(ref_token), token_type="bearer")
-
-        # return Token(access_token=access_token, token_type="bearer")
+        return success_response(response, message="Login Successfull!", data=auth_schemas.TokenPair(access_token=access_token, refresh_token=str(ref_token), token_type="bearer").model_dump(), status_code=status.HTTP_200_OK)
 
     logger.info("password not verified")
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+    return error_response(response, message='Could not validate credentials!', error=[], status_code=status.HTTP_401_UNAUTHORIZED)
 
-async def create_super_user(session: AsyncSession, user_data: SuperUserCreate):
+async def create_super_user(response: Response, session: AsyncSession, user_data: SuperUserCreate):
     """
     Function to create a superuser.
     This function will contain the logic for creating a superuser.
@@ -73,64 +65,26 @@ async def create_super_user(session: AsyncSession, user_data: SuperUserCreate):
     try:
         await user_repo.user_create(session, user_data.model_dump(exclude_unset=True))
     except UserAlreadyExistsException as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e),
-        )
+        return error_response(response, message=str(e), error=[e],status_code=status.HTTP_400_BAD_REQUEST)
     
-async def get_new_access_token(session: AsyncSession, ref_token: str):
+async def rotate_token(response: Response, session: AsyncSession, ref_token: str):
     try:
-        reftoken = await auth_repo.validate_ref_token(session, ref_token)
+        reftoken = await auth_repo.validated_ref_token(session, ref_token)
 
         access_payload = PayloadSchema(sub=reftoken.user_id)
         access_token = create_jwt_token(access_payload)
-        return access_token
+        return success_response(response, message="Access Token Generated Successfully!", data={"access": access_token}, status_code=status.HTTP_200_OK)
+    except Exception as e:
+        return error_response(response, message='Login required.', error=[str(e)], status_code=status.HTTP_401_UNAUTHORIZED)
+
+async def user_logout(response: Response, session: AsyncSession, access : str, ref_token: str):
+    '''
+        Function: Logout User by revoking the refresh token.
+    '''
+    try:
+        await blacklist_token(access)   # Blacklist the access token
+        await auth_repo.token_revoke(session, ref_token)    # Revoke the refresh token
     except auth_exc.InvalidToken as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
-
-async def token_revoke(session: AsyncSession, ref_token: str):
-    # TODO 1. Revoke the given refresh token
-    try:
-        await auth_repo.token_revoke(session, ref_token)
-    except auth_exc.TokenNotFound as e:
-        return ResponseSchema(status="error", message="Token not found!", error=str(e), status_code=status.HTTP_404_NOT_FOUND)
-    # TODO 2. Generate new refresh token
-    return ResponseSchema(status="success", message="Token revoked successfully!", data={}, status_code=status.HTTP_200_OK)
-
-async def token_rotate(session: AsyncSession, ref_token: str):
-    try:
-        new_ref_token = await auth_repo.rotate_ref_token(session, ref_token)
-    except auth_exc.TokenNotFound as e:
-        return ResponseSchema(status="error", message="Token not found!", error=str(e), status_code=status.HTTP_404_NOT_FOUND)
-    return ResponseSchema(status="success", message="Token roatetd successfully!", data={"refresh": new_ref_token}, status_code=status.HTTP_200_OK)
-
-async def token_blacklist(access_token: str):
-    try:
-        payload = decode_jwt_token(access_token)
-        logger.debug(f"Decoded payload: {payload}")
-
-        ttl = int((payload.get('exp') - now().timestamp()))
-        if ttl > 0:
-            await token_blacklist_cache.set(payload.get('jti'), "blacklisted", ex=ttl)
-    except jwt_exc.InvalidTokenError as e:
-        logger.debug(f"Invalid token error: {e}")
-        return ResponseSchema(status="error", message="Invalid Token!", error=str(e), status_code=status.HTTP_400_BAD_REQUEST)
-    except Exception as e:
-        return ResponseSchema(status="error", message="Error occured while decoding token.", error=str(e), status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    return ResponseSchema(status="success", message="Token blacklisted successfully!", data={}, status_code=status.HTTP_200_OK)
-
-async def is_token_blacklisted(token_jti: str):
-    value = token_blacklist_cache.get(token_jti)
-
-    if value:
-        return True
+        logger.debug('Ref token was already invalid!')
     
-    return False
+    return success_response(response, message="User logout successfully!", data={}, status_code=status.HTTP_200_OK)

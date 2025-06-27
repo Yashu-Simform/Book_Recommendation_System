@@ -20,6 +20,7 @@ async def user_create(session: AsyncSession, user_data: dict):
     try:
         session.add(new_user)
         await session.commit()
+        return new_user
     except IntegrityError as e:
         await session.rollback()
         if isinstance(e.orig, UniqueViolation):

@@ -4,7 +4,7 @@ from app.dependencies import get_db
 from typing import Annotated
 from app.modules.books.schemas import BookCreate, BookData
 from app.modules.books import services as book_services
-from app.dependencies import is_super_user, get_authenticated_user, get_auth_user
+from app.dependencies import is_super_user, get_authenticated_user
 from app.modules.auth.schemas import AuthenticatedUser
 from app.core.schemas import ResponseSchema
 
@@ -43,7 +43,7 @@ async def get_book(
     session: Annotated[AsyncSession, Depends(get_db)],
     book_id: Annotated[str, Path(description="The ID of the book to retrieve")],
     user: Annotated[
-        AuthenticatedUser, Security(get_auth_user, scopes=["user-r"])
+        AuthenticatedUser, Security(get_authenticated_user, scopes=["user-r"])
     ],
 ):
     """
@@ -118,7 +118,7 @@ async def delete_book(
 async def get_books(
     session: Annotated[AsyncSession, Depends(get_db)],
     user: Annotated[
-        AuthenticatedUser, Security(get_auth_user, scopes=["user-r"])
+        AuthenticatedUser, Security(get_authenticated_user, scopes=["user-r"])
     ],
     title: Annotated[
         str, Query(description="A title query param to filter books.")
