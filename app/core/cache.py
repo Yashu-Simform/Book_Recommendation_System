@@ -7,3 +7,4 @@ class RedisDB(Redis):
 
 app_cache = RedisDB(db=0)
 token_blacklist_cache = RedisDB(db=1)
+rate_limiting = RedisDB(db=2)

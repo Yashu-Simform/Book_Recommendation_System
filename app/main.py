@@ -6,6 +6,10 @@ from app.modules.books import routes as book_routes
 from app.modules.ratings import routes as rating_routes
 from app.modules.recommendation import routes as recommend_routes
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi_limiter import FastAPILimiter
+from contextlib import asynccontextmanager
+import redis.asyncio as redis
+from app.core.cache import app_cache
 
 app = FastAPI(title="Book Recommendation System")
 
@@ -21,6 +25,14 @@ app.include_router(auth_routes.router)
 app.include_router(book_routes.router)
 app.include_router(rating_routes.router)
 app.include_router(recommend_routes.router)
+
+@asynccontextmanager
+async def lifespan(p_app: FastAPI):
+    # Before the application starts
+    await FastAPILimiter.init(app_cache)
+    yield
+
+    # After the application ends 
 
 
 @app.get("/")

@@ -7,6 +7,7 @@ from app.modules.books import services as book_services
 from app.dependencies import is_super_user, get_authenticated_user
 from app.modules.auth.schemas import AuthenticatedUser
 from app.core.schemas import ResponseSchema
+from fastapi_limiter.depends import RateLimiter
 
 router = APIRouter(prefix="/books", tags=["books"])
 
@@ -15,7 +16,7 @@ router = APIRouter(prefix="/books", tags=["books"])
     "/create",
     summary="Create a new book",
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(is_super_user)],
+    dependencies=[Depends(is_super_user), Depends(RateLimiter(1, seconds = 2))],
     response_model=ResponseSchema,
 )
 async def create_book(

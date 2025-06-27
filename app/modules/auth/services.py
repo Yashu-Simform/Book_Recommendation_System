@@ -51,7 +51,8 @@ async def user_login(response: Response, session: AsyncSession, credentials: Use
         # Refresh Token
         ref_token = await auth_repo.create_ref_token(session=session, user_id=user.id)
         await auth_repo.revoke_latest_ref_token(session,user_id=user.id,replaced_by=str(ref_token))
-        return success_response(response, message="Login Successfull!", data=auth_schemas.TokenPair(access_token=access_token, refresh_token=str(ref_token), token_type="bearer").model_dump(), status_code=status.HTTP_200_OK)
+        return auth_schemas.TokenPair(access_token=access_token, refresh_token=str(ref_token), token_type="bearer")
+        # return success_response(response, message="Login Successfull!", data=auth_schemas.TokenPair(access_token=access_token, refresh_token=str(ref_token), token_type="bearer").model_dump(), status_code=status.HTTP_200_OK)
 
     logger.info("password not verified")
     return error_response(response, message='Could not validate credentials!', error=[], status_code=status.HTTP_401_UNAUTHORIZED)

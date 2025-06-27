@@ -26,8 +26,8 @@ async def get_db():
 
 async def get_authenticated_user(
     session: Annotated[AsyncSession, Depends(get_db)],
-    token: Annotated[str, Depends(oauth2_scheme)],
     security_scopes: SecurityScopes = [],
+    token: Annotated[str, Depends(oauth2_scheme)] = '',
 ) -> auth_schemas.AuthenticatedUser:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,

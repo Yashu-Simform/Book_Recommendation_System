@@ -45,5 +45,5 @@ async def blacklist_token(access_token: str):
 
 
 async def is_token_blacklisted(token_jti: str):
-    value = token_blacklist_cache.get(token_jti)
+    value = await token_blacklist_cache.get(token_jti)
     return True if value else False
