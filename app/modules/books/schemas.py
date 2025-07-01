@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, field_validator
+from pydantic import FilePath, BaseModel, Field, field_validator
 from datetime import date
 
 
@@ -13,9 +13,6 @@ class BookCreate(BookBase):
     )
     published_year: int | None = Field(
         default=None, description="The year the book was published"
-    )
-    image: str | None = Field(
-        default=None, max_length=255, description="Path of the book's cover image"
     )
 
     @field_validator("published_year", mode="after")
@@ -47,6 +44,11 @@ class BookCreate(BookBase):
             }
         }
 
+class BookWithImg(BookCreate):
+    image: FilePath | None = Field(
+        default=None, max_length=255, description="Path of the book's cover image"
+    )
+
 
 class BookData(BookBase):
     id: str = Field(description="The unique identifier of the book")
@@ -74,3 +76,12 @@ class BookData(BookBase):
                 "image": "http://example.com/image.jpg",
             }
         }
+
+# Response Schemas
+
+class BookCreateResponse(BaseModel):
+    id: str
+    title: str
+    author: str
+    description: str | None
+    published_year: int | None

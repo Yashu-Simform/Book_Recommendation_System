@@ -11,7 +11,15 @@ from contextlib import asynccontextmanager
 import redis.asyncio as redis
 from app.core.cache import app_cache
 
-app = FastAPI(title="Book Recommendation System")
+@asynccontextmanager
+async def lifespan(p_app: FastAPI):
+    # Before the application starts
+    await FastAPILimiter.init(app_cache)
+    yield
+
+    # After the application ends 
+
+app = FastAPI(title="Book Recommendation System",lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -25,14 +33,6 @@ app.include_router(auth_routes.router)
 app.include_router(book_routes.router)
 app.include_router(rating_routes.router)
 app.include_router(recommend_routes.router)
-
-@asynccontextmanager
-async def lifespan(p_app: FastAPI):
-    # Before the application starts
-    await FastAPILimiter.init(app_cache)
-    yield
-
-    # After the application ends 
 
 
 @app.get("/")

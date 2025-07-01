@@ -40,6 +40,7 @@ async def create_book(session: AsyncSession, book_data: dict):
         session.add(new_book)
         await session.commit()
         logger.debug(f"Book '{new_book.title}' created successfully.")
+        return new_book
     except Exception as e:
         await session.rollback()
         raise e
@@ -103,6 +104,7 @@ async def delete_book(session: AsyncSession, book_id: str):
     try:
         book.deleted_at = datetime.now(tzinfo)
         await session.commit()
+        return book
     except Exception as e:
         await session.rollback()
         raise e
