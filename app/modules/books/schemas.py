@@ -1,5 +1,6 @@
-from pydantic import FilePath, BaseModel, Field, field_validator
+from pydantic import FilePath, BaseModel, Field, field_validator, computed_field
 from datetime import date
+from app.modules.books.utils import gen_img_url
 
 
 class BookBase(BaseModel):
@@ -23,15 +24,6 @@ class BookCreate(BookBase):
             raise ValueError(f"Book must be published! So enter ")
         return value
 
-    @field_validator("image")
-    def validate_image(cls, value: str | None):
-        if not value:
-            return None
-
-        if value.strip() == "":
-            return None
-
-        return value.strip()
 
     class Config:
         schema_extra = {
@@ -45,24 +37,26 @@ class BookCreate(BookBase):
         }
 
 class BookWithImg(BookCreate):
-    image: FilePath | None = Field(
+    image: str | None = Field(
         default=None, max_length=255, description="Path of the book's cover image"
     )
 
+# Response Schemas
 
-class BookData(BookBase):
-    id: str = Field(description="The unique identifier of the book")
-    title: str = Field(description="The title of the book")
-    author: str = Field(description="The author of the book")
-    description: str | None = Field(
-        default=None, description="A brief description of the book"
-    )
-    published_year: int | None = Field(
-        default=None, description="The year the book was published"
-    )
-    image: str | None = Field(
-        default=None, description="Path of the book's cover image"
-    )
+class BookOut(BaseModel):
+    id: str
+    title: str
+    author: str
+    description: str | None
+    published_year: int | None
+    image: str | None
+
+    @computed_field
+    @property
+    def image_url(self) -> str | None:
+        if self.image:
+            return gen_img_url(self.image)
+        return None
 
     class Config:
         from_attributes = True
@@ -73,15 +67,6 @@ class BookData(BookBase):
                 "author": "John Doe",
                 "description": "This is an example description of the book.",
                 "published_year": 2023,
-                "image": "http://example.com/image.jpg",
+                "image": "http://example.com/profile/img/file_name.png",
             }
         }
-
-# Response Schemas
-
-class BookCreateResponse(BaseModel):
-    id: str
-    title: str
-    author: str
-    description: str | None
-    published_year: int | None

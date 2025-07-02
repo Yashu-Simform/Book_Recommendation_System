@@ -1,25 +1,26 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Response
-from app.modules.books.schemas import BookCreate, BookData
+from app.modules.books.schemas import BookCreate, BookWithImg
 from app.modules.books import schemas as book_schema
 from app.modules.books import repository as book_repository
 from app.modules.books.exceptions import BookNotFoundError, BookAlreadyExistsError
 from fastapi import HTTPException, status
 from app.core.utils import success_response, error_response
+from app.modules.books.utils import gen_img_url
 
-async def create_book(response: Response, session: AsyncSession, book_data: BookCreate):
+async def create_book(response: Response, session: AsyncSession, book_data: BookWithImg):
     try:
         book = await book_repository.create_book(session, book_data.model_dump(exclude_unset=True))
         return success_response(
             response,
             message="Book added successfully!",
-            data=book_schema.BookCreateResponse.model_validate(book, from_attributes=True).model_dump(),
+            data=book_schema.BookOut.model_validate(book, from_attributes=True).model_dump(),
             status_code=status.HTTP_201_CREATED
         )
     except BookAlreadyExistsError as e:
         return error_response(response, message=str(e), error=[e], status_code=status.HTTP_400_BAD_REQUEST)
 
-async def get_book(response: Response, session: AsyncSession, book_id: str) -> BookData:
+async def get_book(response: Response, session: AsyncSession, book_id: str):
     """
     Retrieve a book by its ID.
 
@@ -31,12 +32,13 @@ async def get_book(response: Response, session: AsyncSession, book_id: str) -> B
         The book object if found, otherwise raises an HTTP 404 error.
     """
     try:
+        book = book_schema.BookOut.model_validate(
+                await book_repository.get_book(session, book_id), from_attributes=True
+            )
         return success_response(
             response,
             message="Book fetched successfully!",
-            data=book_schema.BookCreateResponse.model_validate(
-                await book_repository.get_book(session, book_id), from_attributes=True
-            ),
+            data=book.model_dump(),
             status_code=status.HTTP_200_OK,
         )
     except BookNotFoundError as e:
@@ -47,7 +49,7 @@ async def get_book(response: Response, session: AsyncSession, book_id: str) -> B
             status_code=status.HTTP_404_NOT_FOUND
         )
 
-async def update_book(response: Response, session: AsyncSession, book_id: str, book_data: BookCreate):
+async def update_book(response: Response, session: AsyncSession, book_id: str, book_data: BookWithImg):
     """
     Update an existing book in the database.
 
@@ -63,7 +65,7 @@ async def update_book(response: Response, session: AsyncSession, book_id: str, b
         return success_response(
             response,
             message="Book updated successfully!",
-            data=BookData.model_validate(
+            data=book_schema.BookOut.model_validate(
                 await book_repository.update_book(
                     session, book_id, book_data.model_dump(exclude_unset=True)
                 ),
@@ -96,7 +98,7 @@ async def delete_book(response: Response, session: AsyncSession, book_id: str):
         return success_response(
             response,
             message="Book deleted successfully!",
-            data=book_schema.BookCreateResponse.model_validate(
+            data=book_schema.BookOut.model_validate(
                 book,
                 from_attributes=True,
             ),
@@ -113,7 +115,7 @@ async def delete_book(response: Response, session: AsyncSession, book_id: str):
 
 async def get_books(
     response: Response, session: AsyncSession, title: str, author: str, rating: float
-) -> list[BookData]:
+) -> list[book_schema.BookOut]:
     """
     Retrieve all books from the database.
 
@@ -127,7 +129,7 @@ async def get_books(
         session, title=title, author=author, rating=rating
     )
     try:
-        books = [BookData.model_validate(book, from_attributes=True) for book in books]
+        books = [book_schema.BookOut.model_validate(book, from_attributes=True) for book in books]
 
         return success_response(
             response,

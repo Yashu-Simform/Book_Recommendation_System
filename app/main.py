@@ -10,6 +10,7 @@ from fastapi_limiter import FastAPILimiter
 from contextlib import asynccontextmanager
 import redis.asyncio as redis
 from app.core.cache import app_cache
+from fastapi.staticfiles import StaticFiles
 
 @asynccontextmanager
 async def lifespan(p_app: FastAPI):
@@ -33,7 +34,7 @@ app.include_router(auth_routes.router)
 app.include_router(book_routes.router)
 app.include_router(rating_routes.router)
 app.include_router(recommend_routes.router)
-
+app.mount('/profile/img', StaticFiles(directory='data/images'), name="profile_imgs")
 
 @app.get("/")
 def health_check():
