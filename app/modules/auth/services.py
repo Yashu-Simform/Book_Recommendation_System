@@ -22,6 +22,7 @@ from app.core.config import settings
 from app.core.schemas import ResponseSchema
 from app.modules.auth.utils import blacklist_token
 from app.modules.users.schemas import UserCreateResponse
+from app.modules.users.enums import UserRole
 
 async def user_signup(response: Response, session: AsyncSession, user_data: UserSignup):
     """
@@ -62,7 +63,7 @@ async def create_super_user(response: Response, session: AsyncSession, user_data
     Function to create a superuser.
     This function will contain the logic for creating a superuser.
     """
-    user_data.is_superuser = True
+    user_data.role = UserRole.ADMIN
     try:
         await user_repo.user_create(session, user_data.model_dump(exclude_unset=True))
     except UserAlreadyExistsException as e:

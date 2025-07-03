@@ -20,6 +20,7 @@ if config.config_file_name is not None:
 # target_metadata = mymodel.Base.metadata
 from app.core.db import Base
 from app.modules.users.models import User
+from app.modules.users.enums import UserRole
 from app.modules.books.models import Book
 from app.modules.ratings.models import Rating
 from app.modules.auth.models import RefreshToken, Blacklist

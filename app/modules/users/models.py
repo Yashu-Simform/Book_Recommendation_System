@@ -1,12 +1,13 @@
 from app.core.db import Base, AbstractModel
-from sqlalchemy import Column, Integer, String, Boolean
+from sqlalchemy import Column, Integer, String, Boolean, Enum
 from sqlalchemy.orm import mapped_column, validates, Mapped, relationship
+from sqlalchemy.dialects import postgresql
 from string import punctuation
 import email_validator
 from datetime import datetime, date
 import uuid
 from typing import List
-
+from app.modules.users.enums import UserRole
 
 class User(Base, AbstractModel):
     __tablename__ = "user"
@@ -19,9 +20,9 @@ class User(Base, AbstractModel):
     first_name: Mapped[str] = mapped_column(String(128), nullable=True)
     last_name: Mapped[str] = mapped_column(String(128), nullable=True)
     ratings_user: Mapped[list["Rating"]] = relationship(back_populates="users")
+    role: Mapped[UserRole] = mapped_column(Enum(UserRole, name="user_role", create_constraint=True), default=UserRole.USER, nullable=False)
 
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    is_superuser: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     def validate_email(self, key, value: str) -> str:
         if not value:

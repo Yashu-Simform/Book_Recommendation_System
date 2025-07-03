@@ -159,7 +159,7 @@ async def get_books(
         AuthenticatedUser, Security(get_authenticated_user, scopes=["user-r"])
     ],
     title: Annotated[
-        str, Query(description="A title query param to filter books.")
+        str, Query(description="A title query param to filter books.") 
     ] = None,
     author: Annotated[
         str, Query(description="A author query param to filter books.")

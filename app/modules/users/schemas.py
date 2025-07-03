@@ -6,7 +6,7 @@ from pydantic import (
     Field,
     SecretStr,
 )
-
+from app.modules.users.enums import UserRole
 
 class UserData(BaseModel):
     id: str
@@ -15,7 +15,7 @@ class UserData(BaseModel):
     first_name: str | None = None
     last_name: str | None = None
     is_active: bool = True
-    is_superuser: bool = False
+    role: str = UserRole.USER
 
 class UserCreateResponse(BaseModel):
     id: str

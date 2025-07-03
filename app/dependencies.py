@@ -10,6 +10,7 @@ from app.modules.users import repository as user_repo
 from fastapi.security import SecurityScopes
 from app.core.logging import logger
 from app.modules.auth import services as auth_services
+from app.modules.users.enums import UserRole
 
 async def get_db():
     """
@@ -71,7 +72,8 @@ async def get_authenticated_user(
 async def is_super_user(
     user: Annotated[auth_schemas.AuthenticatedUser, Depends(get_authenticated_user)],
 ):
-    if not user.is_superuser:
+    if not user.role == UserRole.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Not a Super user!"
         )
+    # TODO: Update this method in order to check the role of the user.

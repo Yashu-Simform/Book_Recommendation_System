@@ -83,7 +83,7 @@ class UserLoginDocs(BaseModel):
 
 
 class SuperUserCreate(UserSignup):
-    is_superuser: bool = Field(default=True)
+    role: str = Field(default='admin')
 
 
 class Token(BaseModel):
@@ -124,7 +124,7 @@ class RefreshToken(BaseModel):
 class AuthenticatedUser(BaseModel):
     id: str
     email: EmailStr
-    is_superuser: bool
+    role: str
 
     class Config:
         from_attributes = True
