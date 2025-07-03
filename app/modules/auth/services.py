@@ -46,8 +46,8 @@ async def user_login(response: Response, session: AsyncSession, credentials: Use
         # Access token
         nowtime = now()
         exptime = nowtime + timedelta(seconds=settings.access_token_expiry_seconds)
-        access_payload = PayloadSchema(sub=user.id, iat=int(nowtime.timestamp()), exp=int(exptime.timestamp()), jti=str(uuid.uuid4()), scopes=credentials.scopes.split(" "))
-        access_token = create_jwt_token(access_payload)
+        access_payload = PayloadSchema(sub=user.id, iat=int(nowtime.timestamp()), exp=int(exptime.timestamp()), jti=str(uuid.uuid4()), scopes=user.role)
+        access_token = create_jwt_token(access_payload.model_dump())
 
         # Refresh Token
         ref_token = await auth_repo.create_ref_token(session=session, user_id=user.id)
@@ -74,7 +74,7 @@ async def rotate_token(response: Response, session: AsyncSession, ref_token: str
         reftoken = await auth_repo.validated_ref_token(session, ref_token)
 
         access_payload = PayloadSchema(sub=reftoken.user_id)
-        access_token = create_jwt_token(access_payload)
+        access_token = create_jwt_token(access_payload.model_dump())
         return success_response(response, message="Access Token Generated Successfully!", data={"access": access_token}, status_code=status.HTTP_200_OK)
     except Exception as e:
         return error_response(response, message='Login required.', error=[str(e)], status_code=status.HTTP_401_UNAUTHORIZED)

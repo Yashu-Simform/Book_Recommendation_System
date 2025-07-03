@@ -1,26 +1,32 @@
 from app.core.config import settings
-from app.modules.auth.schemas import PayloadSchema
+from app.modules.auth import schemas as auth_schemas
 import jwt
 from fastapi.security import OAuth2PasswordBearer
 from jwt import exceptions as jwt_exc
 from app.core.cache import token_blacklist_cache
 from app.core.logging import logger
 from app.core.utils import now
+from typing import Callable, Optional
+from app.modules.auth import enums as auth_enums
 
 oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl="/auth/login",
     scopes={
-        "user-r": "Read permission for user.",
-        "user-w": "Write permission for user.",
+        auth_enums.Scopes.AUTHOR: "Author rights.",
+        auth_enums.Scopes.ADMIN: "Admin rights.",
+        auth_enums.Scopes.USER: "User rights.",
+        auth_enums.Scopes.ANONYMOUS: "Anonymous User rights.",
+        # auth_enums.Scopes.READ: "Read permission.",
+        # auth_enums.Scopes.WRITE: "Write permission."
     },
 )
 
 
-def create_jwt_token(payload: PayloadSchema) -> str:
+def create_jwt_token(payload: dict) -> str:
     SECRET_KEY = settings.secret_key
     JWT_HASHING_ALGORITHM = settings.jwt_hashing_algorithm
 
-    token = jwt.encode(payload.model_dump(), SECRET_KEY, JWT_HASHING_ALGORITHM)
+    token = jwt.encode(payload, SECRET_KEY, JWT_HASHING_ALGORITHM)
     return token
 
 

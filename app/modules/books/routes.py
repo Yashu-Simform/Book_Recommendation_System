@@ -4,13 +4,13 @@ from app.dependencies import get_db
 from typing import Annotated
 from app.modules.books.schemas import BookCreate, BookOut, BookWithImg
 from app.modules.books import services as book_services
-from app.dependencies import is_super_user, get_authenticated_user
+from app.dependencies import is_super_user, get_authenticated_user, get_authorized_user
 from app.modules.auth.schemas import AuthenticatedUser
 from app.core.schemas import ResponseSchema
 from fastapi_limiter.depends import RateLimiter
 from app.modules.books.utils import save_img
 from app.core.logging import logger
-
+from app.modules.auth import enums as auth_enums
 router = APIRouter(prefix="/books", tags=["books"])
 
 
@@ -18,12 +18,13 @@ router = APIRouter(prefix="/books", tags=["books"])
     "/create",
     summary="Create a new book",
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(is_super_user), Depends(RateLimiter(1, seconds = 2))],
+    dependencies=[Depends(RateLimiter(1, seconds = 2))],
     response_model=ResponseSchema,
 )
 async def create_book(
     response: Response, 
     session: Annotated[AsyncSession, Depends(get_db)],
+    user: Annotated[AuthenticatedUser, Security(get_authorized_user, [auth_enums.Scopes.ADMIN, auth_enums.Scopes.AUTHOR])],
     title: Annotated[str, Form(min_length=1, description="The title of the book")],
     author: Annotated[str, Form(min_length=1, description="The author of the book")],
     description: Annotated[str | None, Form(max_length=1000, description="A brief description of the book")],
@@ -61,10 +62,8 @@ async def create_book(
 async def get_book(
     response: Response, 
     session: Annotated[AsyncSession, Depends(get_db)],
+    user: Annotated[AuthenticatedUser, Security(get_authorized_user, [auth_enums.Scopes.ADMIN, auth_enums.Scopes.AUTHOR])],
     book_id: Annotated[str, Path(description="The ID of the book to retrieve")],
-    user: Annotated[
-        AuthenticatedUser, Security(get_authenticated_user, scopes=["user-r"])
-    ],
 ):
     """
     Retrieve a book by its ID.
@@ -83,12 +82,12 @@ async def get_book(
     "/update/{book_id}",
     summary="Update an existing book",
     status_code=status.HTTP_200_OK,
-    dependencies=[Depends(is_super_user)],
     response_model=ResponseSchema,
 )
 async def update_book(
     response: Response, 
     session: Annotated[AsyncSession, Depends(get_db)],
+    user: Annotated[AuthenticatedUser, Security(get_authorized_user, [auth_enums.Scopes.ADMIN, auth_enums.Scopes.AUTHOR])],
     book_id: Annotated[str, Path(description="The ID of the book to update")],
     title: Annotated[str, Form(min_length=1, description="The title of the book")],
     author: Annotated[str, Form(min_length=1, description="The author of the book")],
@@ -125,11 +124,11 @@ async def update_book(
     "/delete/{book_id}",
     summary="Delete a book by ID",
     status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(is_super_user)],
 )
 async def delete_book(
     response: Response, 
     session: Annotated[AsyncSession, Depends(get_db)],
+    user: Annotated[AuthenticatedUser, Security(get_authorized_user, [auth_enums.Scopes.ADMIN, auth_enums.Scopes.AUTHOR])],
     book_id: Annotated[str, Path(description="The ID of the book to delete")],
 ):
     """
@@ -155,9 +154,7 @@ async def delete_book(
 async def get_books(
     response: Response, 
     session: Annotated[AsyncSession, Depends(get_db)],
-    user: Annotated[
-        AuthenticatedUser, Security(get_authenticated_user, scopes=["user-r"])
-    ],
+    user: Annotated[AuthenticatedUser, Security(get_authorized_user, [auth_enums.Scopes.ADMIN, auth_enums.Scopes.AUTHOR])],
     title: Annotated[
         str, Query(description="A title query param to filter books.") 
     ] = None,

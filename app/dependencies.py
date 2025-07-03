@@ -27,7 +27,6 @@ async def get_db():
 
 async def get_authenticated_user(
     session: Annotated[AsyncSession, Depends(get_db)],
-    security_scopes: SecurityScopes = [],
     token: Annotated[str, Depends(oauth2_scheme)] = '',
 ) -> auth_schemas.AuthenticatedUser:
     credentials_exception = HTTPException(
@@ -54,17 +53,6 @@ async def get_authenticated_user(
         logger.debug(f"Invalid token error: {e}")
         raise credentials_exception
 
-    req_scopes = payload.get("scopes", [])
-
-    # Security permission check
-    for scope in security_scopes.scopes:
-        if scope not in req_scopes:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Not enough permissions.",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-
     rawuser = await user_repo.get_user(session, id=user_id)
     user = auth_schemas.AuthenticatedUser.model_validate(rawuser)
     return user
@@ -72,8 +60,18 @@ async def get_authenticated_user(
 async def is_super_user(
     user: Annotated[auth_schemas.AuthenticatedUser, Depends(get_authenticated_user)],
 ):
-    if not user.role == UserRole.ADMIN:
+    if user.role != UserRole.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Not a Super user!"
         )
-    # TODO: Update this method in order to check the role of the user.
+    return user
+
+async def get_authorized_user(
+    *,
+    security_scopes: SecurityScopes = [],
+    user: Annotated[auth_schemas.AuthenticatedUser, Depends(get_authenticated_user)],
+):
+    if not user.role in security_scopes:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not have rights.")
+    
+    return user

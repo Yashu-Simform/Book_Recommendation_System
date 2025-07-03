@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 from app.core.constants import tzinfo
 from app.core.config import settings
 import uuid
+from app.modules.auth import enums as auth_enums
 
 class UserBase(BaseModel):
     email: EmailStr
@@ -108,7 +109,7 @@ class PayloadSchema(BaseModel):
     iat: int
     exp: int
     jti: str
-    scopes: list[str] = []
+    role: str = auth_enums.Scopes.ANONYMOUS
 
 
 class RefreshToken(BaseModel):
@@ -125,6 +126,11 @@ class AuthenticatedUser(BaseModel):
     id: str
     email: EmailStr
     role: str
+    # permissions: str
 
     class Config:
         from_attributes = True
+
+class Scopes(BaseModel):
+    roles: list[str]
+    permissions: list[str]

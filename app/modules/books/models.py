@@ -1,8 +1,9 @@
 from app.core.db import Base, AbstractModel
 from sqlalchemy.orm import mapped_column, Mapped, validates, relationship
-from sqlalchemy import String, UniqueConstraint, Index
+from sqlalchemy import String, UniqueConstraint, Index, ForeignKey
 import uuid
 from datetime import date
+from app.modules.users import models as user_models
 
 
 class Book(Base, AbstractModel):
@@ -39,3 +40,11 @@ class Book(Base, AbstractModel):
         if value is not None and (value < 0 or value > year):
             raise ValueError(f"Published year must be between 0 and {year}.")
         return value
+
+class Author(Base, AbstractModel):
+    __tablename__ = "author"
+
+    id: Mapped[str] = uuid.uuid4()
+    book_id: Mapped[str] = ForeignKey(Book.id, ondelete="CASCADE")
+    user_id: Mapped[str] = ForeignKey(user_models.User.id, ondelete="CASCADE")
+    books: Mapped[list[str]] = relationship(Book, back_populates='books')
